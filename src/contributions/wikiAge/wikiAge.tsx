@@ -25,7 +25,7 @@ import { ListSelection } from "azure-devops-ui/List";
 
 import {WikiRestClient, WikiV2} from "azure-devops-extension-api/Wiki";
 import * as GetWiki from "./GetWiki"
-import { showRootComponent } from "../../Common";
+import { showRootComponent } from "../../common";
 import {WikiPageBatchClient, WikiPagesBatchResult,WikiPageVJSP} from './restClient/JeffsWikiClient';
 
 import * as GetGit from "./GitOps";
