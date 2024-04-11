@@ -1,6 +1,9 @@
 {
   "name": "wikiage",
   "version": "0.1.1",
+  "engines": {
+    "node": "8.12.0"
+  },
   "description": "Azure DevOps wiki age report extension",
   "keywords": [
     "extensions",
