@@ -63,6 +63,7 @@ interface IWikiAgeState {
     defaultDateSelection:DropdownSelection;
     defaultTeamSelection:DropdownSelection;
     selectedAreaPath:string;
+    selectedFilterTeam:string;
 }
 
 
@@ -194,7 +195,7 @@ export class WikiAgeContent extends React.Component<{}, IWikiAgeState> {
         let defaultDateSelection = new DropdownSelection();
         defaultDateSelection.select(2);
     
-        let initState:IWikiAgeState = {projectID:"", projectName:"", projectWikiID:"", projectWikiName:"", projectWikiRepoID:"", pageTableRows:[],doneLoading:false,daysThreshold:90, emptyWiki:true, renderOwners:false, teamListItems:[], workItemType:undefined, defaultDateSelection:defaultDateSelection, defaultTeamSelection:new DropdownSelection(), selectedAreaPath:""};
+        let initState:IWikiAgeState = {projectID:"", projectName:"", projectWikiID:"", projectWikiName:"", projectWikiRepoID:"", pageTableRows:[],doneLoading:false,daysThreshold:90, emptyWiki:true, renderOwners:false, teamListItems:[], workItemType:undefined, defaultDateSelection:defaultDateSelection, defaultTeamSelection:new DropdownSelection(), selectedAreaPath:"", selectedFilterTeam:""};
         return initState;
     }
 
@@ -309,7 +310,7 @@ export class WikiAgeContent extends React.Component<{}, IWikiAgeState> {
 
                     }
                     
-                    let tblRow:PageTableItem[] = this.CollectPageRows(pgList,s.projectID,s.selectedAreaPath);
+                    let tblRow:PageTableItem[] = this.CollectPageRows(pgList,s.projectID,s.selectedAreaPath,s.selectedFilterTeam);
 
                     
                     let pageDetail:WikiPageVJSP[] = await GetWiki.GetPageDetails(bclient,s.projectID,w.id,pgList);                    
@@ -681,6 +682,32 @@ export class WikiAgeContent extends React.Component<{}, IWikiAgeState> {
 
     }
 
+    private  selectFilterTeam = (event: React.SyntheticEvent<HTMLElement>, item: IListBoxItem<{}>) =>{
+
+
+        this.DoTeamFilter(item.id);
+
+    }
+
+    private async DoTeamFilter(teamId:string)
+    {
+        let projectId:string = this.state.projectID;
+        let workClient:WorkRestClient = await this.GetWorkAPIClient();
+        let teamSetting:TeamFieldValues = await GetProject.GetTeamFieldValues(workClient,projectId,teamId);
+        let path = teamSetting.defaultValue;
+        let pageTableRows:PageTableItem[] =this.state.pageTableRows;
+        // let ndx:number =0;
+        // do{
+
+        //     pageTableRows[ndx].areaPath = path;
+        //     ndx++;
+        // } while(ndx < pageTableRows.length)
+
+        this.setState({pageTableRows:pageTableRows, selectedAreaPath:path, selectedFilterTeam: teamSetting.});
+
+    }
+
+
     //Day drop down select
     private SelectDays = (event: React.SyntheticEvent<HTMLElement>, item: IListBoxItem<{}>) => {
 
@@ -703,14 +730,15 @@ export class WikiAgeContent extends React.Component<{}, IWikiAgeState> {
     //////////////////////////////Table Render Items/////////////////////////////////////////
 
 
-    private CollectPageRows(pageList:WikiPagesBatchResult[], projectId:string, areaPath:string):PageTableItem[]
+    private CollectPageRows(pageList:WikiPagesBatchResult[], projectId:string, areaPath:string, teamFilter:string):PageTableItem[]
     {
         let result:PageTableItem[] = [];
         pageList.forEach(thisPage => {
     
             let newPage:PageTableItem = {projectId:projectId, pageID:thisPage.id.toString(), pagePath:thisPage.path, fileName:thisPage.path, gitItemPath:"", pageURL:"", updateTimestamp: "", updatedBy:"", daysOld:-1, updateDateMili:-1, daysThreshold:90, pageOwner:"", workItemType:undefined, hasWorkItemCreated:false, index:0, pageRef:this, areaPath:areaPath, workItemNumber:"", workItemURL:""};        
-            
-            result.push(newPage);
+            if (newPage.pagePath.includes(teamFilter)){
+                result.push(newPage);
+            }
         });
         return result;
     }
@@ -1051,6 +1079,13 @@ export class WikiAgeContent extends React.Component<{}, IWikiAgeState> {
                                             </td>
                                             <td>
                                                 <Dropdown items={teamList} placeholder="Select a Team" ariaLabel="Basic" className={teamDropDownClass} onSelect={this.selectTeam} selection={teamDefault} /> 
+                                            </td>
+                                            <td>
+                                                <Header title="Team To Filter To: " className={teamSelectPromptClass} titleSize={TitleSize.Small} />
+                                            </td>
+                                            <td>
+                    
+                                                <Dropdown items={teamList} placeholder="Select a Team" ariaLabel="Basic" className={teamDropDownClass} onSelect={this.selectFilterTeam} selection={teamDefault} /> 
                                             </td>
                                         </tr>
                                     </table>
