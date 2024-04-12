@@ -13,7 +13,7 @@
   "license": "GPL-3.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/jeffpriz/ado-wiki-age-report"
+    "url": "https://github.com/pabrams/ado-wiki-age-report"
   },
   "scripts": {
     "clean": "rimraf ./dist",
