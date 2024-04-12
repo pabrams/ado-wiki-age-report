@@ -23,6 +23,8 @@ import { IListBoxItem} from "azure-devops-ui/ListBox";
 import { ZeroData } from "azure-devops-ui/ZeroData";
 import { ListSelection } from "azure-devops-ui/List";
 
+import { TextField } from "azure-devops-ui/TextField";
+
 import {WikiRestClient, WikiV2} from "azure-devops-extension-api/Wiki";
 import * as GetWiki from "./GetWiki"
 import { showRootComponent } from "../../common";
@@ -63,7 +65,7 @@ interface IWikiAgeState {
     defaultDateSelection:DropdownSelection;
     defaultTeamSelection:DropdownSelection;
     selectedAreaPath:string;
-    selectedFilterTeam:string;
+    pagePathFilter:string;
 }
 
 
@@ -195,7 +197,7 @@ export class WikiAgeContent extends React.Component<{}, IWikiAgeState> {
         let defaultDateSelection = new DropdownSelection();
         defaultDateSelection.select(2);
     
-        let initState:IWikiAgeState = {projectID:"", projectName:"", projectWikiID:"", projectWikiName:"", projectWikiRepoID:"", pageTableRows:[],doneLoading:false,daysThreshold:90, emptyWiki:true, renderOwners:false, teamListItems:[], workItemType:undefined, defaultDateSelection:defaultDateSelection, defaultTeamSelection:new DropdownSelection(), selectedAreaPath:"", selectedFilterTeam:""};
+        let initState:IWikiAgeState = {projectID:"", projectName:"", projectWikiID:"", projectWikiName:"", projectWikiRepoID:"", pageTableRows:[],doneLoading:false,daysThreshold:90, emptyWiki:true, renderOwners:false, teamListItems:[], workItemType:undefined, defaultDateSelection:defaultDateSelection, defaultTeamSelection:new DropdownSelection(), selectedAreaPath:"", pagePathFilter:""};
         return initState;
     }
 
@@ -226,11 +228,9 @@ export class WikiAgeContent extends React.Component<{}, IWikiAgeState> {
                 }
                 let listItems:Array<IListBoxItem<{}>> =this.GetTeamListItemsFromTeamList(teamList);
                 newState.teamListItems = listItems;
-                
-                
-                
+
                 let teamIndexDefault:number = this.GetDefaultTeamIndex(listItems, project.name);
-                
+
                 let teamDefault:DropdownSelection = this.state.defaultTeamSelection;                
                 teamDefault.select(teamIndexDefault);
                 newState.defaultTeamSelection = teamDefault;
@@ -310,7 +310,7 @@ export class WikiAgeContent extends React.Component<{}, IWikiAgeState> {
 
                     }
                     
-                    let tblRow:PageTableItem[] = this.CollectPageRows(pgList,s.projectID,s.selectedAreaPath,s.selectedFilterTeam);
+                    let tblRow:PageTableItem[] = this.CollectPageRows(pgList,s.projectID,s.selectedAreaPath);
 
                     
                     let pageDetail:WikiPageVJSP[] = await GetWiki.GetPageDetails(bclient,s.projectID,w.id,pgList);                    
@@ -682,29 +682,19 @@ export class WikiAgeContent extends React.Component<{}, IWikiAgeState> {
 
     }
 
-    private  selectFilterTeam = (event: React.SyntheticEvent<HTMLElement>, item: IListBoxItem<{}>) =>{
-
-
-        this.DoTeamFilter(item.id);
-
+    private filterTextChanged = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, value: string) => {
+        this.applyPagePathFilter(value);
     }
 
-    private async DoTeamFilter(teamId:string)
+    private async applyPagePathFilter(filterText:string)
     {
-        let projectId:string = this.state.projectID;
-        let workClient:WorkRestClient = await this.GetWorkAPIClient();
-        let teamSetting:TeamFieldValues = await GetProject.GetTeamFieldValues(workClient,projectId,teamId);
-        let path = teamSetting.defaultValue;
+        let pagePathFilter:string = this.state.pagePathFilter;
         let pageTableRows:PageTableItem[] =this.state.pageTableRows;
-        // let ndx:number =0;
-        // do{
-
-        //     pageTableRows[ndx].areaPath = path;
-        //     ndx++;
-        // } while(ndx < pageTableRows.length)
-
-        this.setState({pageTableRows:pageTableRows, selectedAreaPath:path, selectedFilterTeam: teamSetting.});
-
+        console.log ("Filtering pagePath by filterText : " + filterText);
+        let filteredRows:PageTableItem[] = pageTableRows.filter( function (item) {
+            return item.pagePath.includes(filterText);
+        });
+        this.setState({pageTableRows:filteredRows, pagePathFilter:filterText});
     }
 
 
@@ -730,15 +720,13 @@ export class WikiAgeContent extends React.Component<{}, IWikiAgeState> {
     //////////////////////////////Table Render Items/////////////////////////////////////////
 
 
-    private CollectPageRows(pageList:WikiPagesBatchResult[], projectId:string, areaPath:string, teamFilter:string):PageTableItem[]
+    private CollectPageRows(pageList:WikiPagesBatchResult[], projectId:string, areaPath:string):PageTableItem[]
     {
         let result:PageTableItem[] = [];
         pageList.forEach(thisPage => {
     
-            let newPage:PageTableItem = {projectId:projectId, pageID:thisPage.id.toString(), pagePath:thisPage.path, fileName:thisPage.path, gitItemPath:"", pageURL:"", updateTimestamp: "", updatedBy:"", daysOld:-1, updateDateMili:-1, daysThreshold:90, pageOwner:"", workItemType:undefined, hasWorkItemCreated:false, index:0, pageRef:this, areaPath:areaPath, workItemNumber:"", workItemURL:""};        
-            if (newPage.pagePath.includes(teamFilter)){
-                result.push(newPage);
-            }
+            let newPage:PageTableItem = {projectId:projectId, pageID:thisPage.id.toString(), pagePath:thisPage.path, fileName:thisPage.path, gitItemPath:"", pageURL:"", updateTimestamp: "", updatedBy:"", daysOld:-1, updateDateMili:-1, daysThreshold:90, pageOwner:"", workItemType:undefined, hasWorkItemCreated:false, index:0, pageRef:this, areaPath:areaPath, workItemNumber:"", workItemURL:""};
+            result.push(newPage);
         });
         return result;
     }
@@ -1023,6 +1011,8 @@ export class WikiAgeContent extends React.Component<{}, IWikiAgeState> {
         let teamSelectPromptClass:string ="teamSelectPrompt" + classSuffix;
         let teamDropDownClass:string ="teamDropDown" + classSuffix;
 
+        let filterValue:string = this.state.pagePathFilter;
+
         if(doneLoading)
         {
             if(failedFindingWikiPages)
@@ -1080,12 +1070,10 @@ export class WikiAgeContent extends React.Component<{}, IWikiAgeState> {
                                             <td>
                                                 <Dropdown items={teamList} placeholder="Select a Team" ariaLabel="Basic" className={teamDropDownClass} onSelect={this.selectTeam} selection={teamDefault} /> 
                                             </td>
+                                        </tr>
+                                        <tr>
                                             <td>
-                                                <Header title="Team To Filter To: " className={teamSelectPromptClass} titleSize={TitleSize.Small} />
-                                            </td>
-                                            <td>
-                    
-                                                <Dropdown items={teamList} placeholder="Select a Team" ariaLabel="Basic" className={teamDropDownClass} onSelect={this.selectFilterTeam} selection={teamDefault} /> 
+                                                <TextField placeholder="enter a filter for Page Path" autoFocus autoSelect value={filterValue} onChange={this.filterTextChanged} /> 
                                             </td>
                                         </tr>
                                     </table>
