@@ -73,9 +73,7 @@ export class WikiAgeContent extends React.Component<{}, IWikiAgeState> {
         { text: "Updated in last 1 Year", id: "365" },        
         { text: "Updated in last 2 Years", id: "730" }
     ];
-
     public PageRef:WikiAgeContent;
-
     private wikiPageColumns:ITableColumn<PageTableItem>[]  = [
         {
             id: "statusCol",        
