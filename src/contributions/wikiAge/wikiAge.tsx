@@ -275,50 +275,30 @@ export class WikiAgeContent extends React.Component<{}, IWikiAgeState> {
             let wclient = await this.GetWikiAPIClient();            
             let w:WikiV2 = await GetWiki.FindProjectWiki(wclient, s.projectID);
             let bclient = await this.GetBatchWikiAPIClient();            
-            if(w) {   
+            if(w) {
                 s.projectWikiID = w.id;                
                 s.projectWikiName = w.name;
                 s.projectWikiRepoID = w.repositoryId;
-                let pgList:WikiPagesBatchResult[] = []
-                try {
-                    try {
-                        pgList = await GetWiki.GetWikiPages(bclient,s.projectID,w.id);
+                let pgList:WikiPagesBatchResult[] = [];
+                pgList = await GetWiki.GetWikiPages(bclient,s.projectID,w.id);
+                let tblRow:PageTableItem[] = this.CollectPageRows(pgList,s.projectID,s.selectedAreaPath);
+                let pageDetail:WikiPageVJSP[] = await GetWiki.GetPageDetails(bclient,s.projectID,w.id,pgList);                    
+                await this.MergePageDetails(tblRow, pageDetail);
+                tblRow.forEach(r => {
+                    if (r.pageOwner.trim().length > 0) {
+                        s.renderOwners = true;
                     }
-                    catch (getEx) {
-                        if (getEx) {
-                            if(JSON.stringify(getEx) != "{}") {
-                                this.toastError("Error Retrieving Wiki Page List: " +  JSON.stringify(getEx));
-                            }
-                        }
-                    }
-                    let tblRow:PageTableItem[] = this.CollectPageRows(pgList,s.projectID,s.selectedAreaPath);
-                    let pageDetail:WikiPageVJSP[] = await GetWiki.GetPageDetails(bclient,s.projectID,w.id,pgList);                    
-                    await this.MergePageDetails(tblRow, pageDetail);
-                    tblRow.forEach(r => {
-                        if (r.pageOwner.trim().length > 0) {
-                            s.renderOwners = true;
-                        }                        
-                    });
-                    try {
-                        let gitDetails:GitItem[] = await this.GetGitDetailsForPages(tblRow, w.repositoryId, s.projectID);
-                        await this.MergeGitDetails(tblRow,gitDetails);
-                    }
-                    catch(ex) {
-                        this.toastError("git failed");
-                    }
-
-                    this.SetTableRowWorkItemType(tblRow,s.workItemType);
-                    if (tblRow.length > 0) {
-                        s.emptyWiki=false;
-                    }
-                    tblRow = tblRow.sort(this.dateSort);
-                    this.SetTableRowsDaysThreshold(tblRow, s.daysThreshold);
-                    s.pageTableRows = tblRow;
-                    s.filteredPageTableRows = tblRow;
+                });
+                let gitDetails:GitItem[] = await this.GetGitDetailsForPages(tblRow, w.repositoryId, s.projectID);
+                await this.MergeGitDetails(tblRow,gitDetails);
+                this.SetTableRowWorkItemType(tblRow,s.workItemType);
+                if (tblRow.length > 0) {
+                    s.emptyWiki=false;
                 }
-                catch(ex) {
-                    this.toastError("During Work : " + ex + JSON.stringify(ex))
-                }
+                tblRow = tblRow.sort(this.dateSort);
+                this.SetTableRowsDaysThreshold(tblRow, s.daysThreshold);
+                s.pageTableRows = tblRow;
+                s.filteredPageTableRows = tblRow;
                 s.doneLoading=true;
                 this.setState(s);
             }
@@ -350,8 +330,7 @@ export class WikiAgeContent extends React.Component<{}, IWikiAgeState> {
     
     private async SetTableRowWorkItemType(tableRows:PageTableItem[], wiType:WorkItemTypeReference|undefined) {
         let ndx:number = 0;
-        if(tableRows.length > 0)
-        {
+        if(tableRows.length > 0) {
             do {
                 tableRows[ndx].workItemType = wiType;
                 ndx++;
@@ -425,7 +404,7 @@ export class WikiAgeContent extends React.Component<{}, IWikiAgeState> {
         if (tableRows.length > 0) {
             do {
                 let detail:GitItem|undefined = this.GetGitItemFromList(gitDetails,tableRows[ndx].fileName);
-                if(detail != undefined) {
+                if (detail != undefined) {
                     tableRows[ndx].updateTimestamp = detail.latestProcessedChange.committer.date.toLocaleDateString(
                         'en-us', { weekday:"long", year:"numeric", month:"long", day:"numeric"}
                     );
@@ -444,9 +423,8 @@ export class WikiAgeContent extends React.Component<{}, IWikiAgeState> {
         let ndx:number = 0;
         let found:boolean = false;
         let result:GitItem|undefined = undefined;
-        do{
-            if(allGitDetails[ndx].path == pathToFind)
-            {
+        do {
+            if (allGitDetails[ndx].path == pathToFind) {
                 result = allGitDetails[ndx];
                 found = true;
             }
@@ -462,8 +440,8 @@ export class WikiAgeContent extends React.Component<{}, IWikiAgeState> {
         let ndx:number = 0;
         let found:boolean = false;
         let result:WikiPageVJSP|undefined = undefined;
-        do{
-            if(allPages[ndx].id == idToFind) {
+        do {
+            if (allPages[ndx].id == idToFind) {
                 result = allPages[ndx];
                 found = true;
             }
@@ -634,7 +612,7 @@ export class WikiAgeContent extends React.Component<{}, IWikiAgeState> {
         });
         return result;
     }
-    
+
     private RenderIDLink(
         rowIndex: number,
         columnIndex: number,
@@ -845,7 +823,7 @@ export class WikiAgeContent extends React.Component<{}, IWikiAgeState> {
 
     private GetShowTeamBoxStyles(teamList:Array<IListBoxItem<{}>>):string {
         let suffix:string = "";
-        if(teamList.length <= 1) {
+        if (teamList.length <= 1) {
             suffix = "-hidden";
         }
         return suffix;
