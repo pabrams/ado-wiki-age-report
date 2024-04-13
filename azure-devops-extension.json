@@ -2,7 +2,7 @@
     "manifestVersion": 1,
     "id": "wikiAge",
     "publisher": "paulabrams1",
-    "version": "1.0.27",
+    "version": "1.0.32",
     "name": "Wiki Age Report",
     "description": "Get insight in to potentially stale and out of date documentation",
     "public": true,
@@ -47,13 +47,6 @@
             "addressable": true
         }
     ],
-    "badges": [
-        {
-            "href": "https://dev.azure.com/oneluckidev/OneLuckiDev/_apis/build/status/jeffpriz.ado-wiki-age-report?branchName=main",
-            "uri": "https://dev.azure.com/oneluckidev/OneLuckiDev/_apis/build/status/jeffpriz.ado-wiki-age-report?branchName=main",
-            "description": "Build for this extension run in Azure DevOps"
-        }
-    ],
     "contributions": [
         {
             "id": "onelucki-wiki-age",
@@ -79,18 +72,15 @@
     ],
     "links": {
         "support": {
-            "uri": "https://github.com/jeffpriz/ado-wiki-age-report/issues"
+            "uri": "https://github.com/pabrams/ado-wiki-age-report/issues"
         },
         "repository": {
-            "uri": "https://github.com/jeffpriz/ado-wiki-age-report"
-        },
-        "build": {
-            "uri":"https://dev.azure.com/oneluckidev/OneLuckiDev/_apis/build/status/jeffpriz.ado-wiki-age-report?branchName=main"
+            "uri": "https://github.com/pabrams/ado-wiki-age-report"
         }
     },
     "repository": {
         "type": "git",
-        "uri": "https://github.com/jeffpriz/ado-wiki-age-report"
+        "uri": "https://github.com/pabrams/ado-wiki-age-report"
     },
     "branding": {
         "color": "rgb(27,160,225)",
