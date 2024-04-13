@@ -66,6 +66,7 @@ interface IWikiAgeState {
     defaultTeamSelection:DropdownSelection;
     selectedAreaPath:string;
     pagePathFilter:string;
+    filteredPageTableRows:PageTableItem[];
 }
 
 
@@ -197,7 +198,25 @@ export class WikiAgeContent extends React.Component<{}, IWikiAgeState> {
         let defaultDateSelection = new DropdownSelection();
         defaultDateSelection.select(2);
     
-        let initState:IWikiAgeState = {projectID:"", projectName:"", projectWikiID:"", projectWikiName:"", projectWikiRepoID:"", pageTableRows:[],doneLoading:false,daysThreshold:90, emptyWiki:true, renderOwners:false, teamListItems:[], workItemType:undefined, defaultDateSelection:defaultDateSelection, defaultTeamSelection:new DropdownSelection(), selectedAreaPath:"", pagePathFilter:""};
+        let initState:IWikiAgeState = {
+            projectID:"", 
+            projectName:"", 
+            projectWikiID:"", 
+            projectWikiName:"", 
+            projectWikiRepoID:"", 
+            pageTableRows:[],
+            doneLoading:false,
+            daysThreshold:90, 
+            emptyWiki:true, 
+            renderOwners:false, 
+            teamListItems:[], 
+            workItemType:undefined, 
+            defaultDateSelection:defaultDateSelection, 
+            defaultTeamSelection:new DropdownSelection(), 
+            selectedAreaPath:"", 
+            pagePathFilter:"", 
+            filteredPageTableRows:[]
+        };
         return initState;
     }
 
@@ -338,6 +357,7 @@ export class WikiAgeContent extends React.Component<{}, IWikiAgeState> {
                     tblRow = tblRow.sort(this.dateSort);
                     this.SetTableRowsDaysThreshold(tblRow, s.daysThreshold);
                     s.pageTableRows = tblRow;
+                    s.filteredPageTableRows = tblRow;
                 }
                 catch(ex)
                 {
@@ -689,12 +709,12 @@ export class WikiAgeContent extends React.Component<{}, IWikiAgeState> {
     private async applyPagePathFilter(filterText:string)
     {
         let pagePathFilter:string = this.state.pagePathFilter;
-        let pageTableRows:PageTableItem[] =this.state.pageTableRows;
+        let pageTableRows:PageTableItem[] = this.state.pageTableRows;
         console.log ("Filtering pagePath by filterText : " + filterText);
         let filteredRows:PageTableItem[] = pageTableRows.filter( function (item) {
             return item.pagePath.includes(filterText);
         });
-        this.setState({pageTableRows:filteredRows, pagePathFilter:filterText});
+        this.setState({pageTableRows:pageTableRows, pagePathFilter:filterText, filteredPageTableRows:filteredRows});
     }
 
 
@@ -998,7 +1018,7 @@ export class WikiAgeContent extends React.Component<{}, IWikiAgeState> {
         let defaultDateSelection = this.state.defaultDateSelection;
         let teamList:Array<IListBoxItem<{}>> = this.state.teamListItems;
         let tableItemsNoIcons = new ArrayItemProvider<PageTableItem>(
-            this.state.pageTableRows.map((item: PageTableItem) => {
+            this.state.filteredPageTableRows.map((item: PageTableItem) => {
                 const newItem = Object.assign({}, item);
                 //newItem.name = { text: newItem.name.text };
                 return newItem;
