@@ -1,22 +1,15 @@
 import * as React from "react";
-import { ObservableValue } from "azure-devops-ui/Core/Observable";
 import { IStatusProps, Status, Statuses, StatusSize } from "azure-devops-ui/Status";
 import { WorkItemTypeReference, WorkItem } from "azure-devops-extension-api/WorkItemTracking/WorkItemTracking";
-import {WikiPagesBatchResult} from './restClient/JeffsWikiClient';
-import {    
-    ISimpleTableCell,    
+import {
     ITableColumn,
     SimpleTableCell
 } from "azure-devops-ui/Table";
 import { Link } from "azure-devops-ui/Link";
-import { Button } from "azure-devops-ui/Button";
-import { ButtonGroup } from "azure-devops-ui/ButtonGroup";
-import {WikiAgeContent} from './wikiAge';
+import { WikiAgeContent } from './wikiAge';
 import * as WI from './WorkItemFunctions';
 
-
-
-export interface PageTableItem  {
+export interface PageTableItem {
     projectId:string;
     pageID: string;
     pagePath: string;
@@ -40,7 +33,7 @@ export interface PageTableItem  {
 
 
 
-export function RenderIDLink(
+export function RenderIDLink (
 rowIndex: number,
 columnIndex: number,
 tableColumn: ITableColumn<PageTableItem>,
@@ -66,7 +59,6 @@ export function renderStatus(
     {
     const { daysOld, daysThreshold} = tableItem;
     return (
-    
         <SimpleTableCell columnIndex={columnIndex} tableColumn={tableColumn} key={"col-" + columnIndex} contentClassName="fontWeightSemiBold font-weight-semibold fontSizeM font-size-m scroll-hidden">
         <Status
             {...getStatusIndicatorData(daysOld, daysThreshold).statusProps}
@@ -74,10 +66,8 @@ export function renderStatus(
             size={StatusSize.m}
         />
         </SimpleTableCell>
-
     );
 }
-
 
 export function RenderDaysCount(
     rowIndex: number,
@@ -142,63 +132,18 @@ export function RenderOwner(
     );
 }
 
-//export function RenderWorkItemButton(
-//    rowIndex: number,
-//    columnIndex: number,
-//    tableColumn: ITableColumn<PageTableItem>,
-//    tableItem: PageTableItem
-//    ): JSX.Element
-//    {
-//    const {pagePath, daysOld, daysThreshold, pageOwner, updatedBy, workItemType} = tableItem;
-//    if(workItemType)
-//    {
-//        let wiType:string = workItemType.name;
-//
-//        let btnText:string = "Create " + wiType;
-//        if( daysOld >= daysThreshold)
-//        {
-//            return (
-//            
-//                <SimpleTableCell columnIndex={columnIndex} tableColumn={tableColumn} key={"col-" + columnIndex} contentClassName="fontWeightSemiBold font-weight-semibold fontSizeM font-size-m scroll-hidden">
-//                    <ButtonGroup><Button text={btnText} id={rowIndex.toString()} subtle={false} primary={true} onClick={() => CreateWorkItemButtonClick(pagePath)}></Button></ButtonGroup>
-//                </SimpleTableCell>
-//            );
-//        }
-//        else
-//        {
-//            return (
-//                <SimpleTableCell columnIndex={columnIndex} tableColumn={tableColumn} key={"col-" + columnIndex} contentClassName="fontWeightSemiBold font-weight-semibold fontSizeM font-size-m scroll-hidden">
-//                    
-//                </SimpleTableCell>
-//                );
-//        }
-//    }
-//   else{
-//
-//        return (
-//        <SimpleTableCell columnIndex={columnIndex} tableColumn={tableColumn} key={"col-" + columnIndex} contentClassName="fontWeightSemiBold font-weight-semibold fontSizeM font-size-m scroll-hidden">
-//            
-//        </SimpleTableCell>
-//        );
-//    }
-//}
-
 export function dateSort(a:PageTableItem, b:PageTableItem) {
-
     if(a.updateDateMili < b.updateDateMili) {return -1;}
     if(a.updateDateMili > b.updateDateMili) {return 1;}
     return 0;
-  }
+}
 
-
-  export interface IStatusIndicatorData {
+export interface IStatusIndicatorData {
     statusProps: IStatusProps;
     label: string;
 }
 
-  export function getStatusIndicatorData(daysOld: number, threshhold:number): IStatusIndicatorData {
-    
-    
+export function getStatusIndicatorData(daysOld: number, threshhold:number): IStatusIndicatorData {
     const indicatorData: IStatusIndicatorData = {
         label: "Success",
         statusProps: { ...Statuses.Success, ariaLabel: "Success" },
@@ -217,42 +162,34 @@ export function dateSort(a:PageTableItem, b:PageTableItem) {
     return indicatorData;
 }
     
-export async function CreateWorkItemButtonClick(data:PageTableItem, rowIndex:number):Promise<any>
-{
-
-
+export async function CreateWorkItemButtonClick(data:PageTableItem, rowIndex:number):Promise<any> {
     data.hasWorkItemCreated= true;
     data.pageRef.ResetRowState(rowIndex,data);
     let WITCl = await data.pageRef.GetWorkWITClient();
     let wiName:string =  "";
-    if(data.workItemType)
-    {
+    if(data.workItemType) {
         wiName = data.workItemType.name;        
     }
-    else{
+    else {
         wiName = "Task";
     }
 
     let workItemDescriptionText:string = GetWorkItemDescriptionText(data.pagePath, data.pageURL, data.updatedBy, data.updateTimestamp, data.pageOwner);
     let workItemTitle:string = `Update Wiki Document ${data.fileName}`;
     let acceptanceText:string = `<div>The Wiki document has been reviewed and updated to be current as of Today.</div> <div><br></div><div>Update the document with an Updated date or a Reviewed Date remark to make sure it comes off the Wiki Age Report`;
-    try
-    {
+    try {
         let newWI:WorkItem = await WI.CreateWorkItem(WITCl,data.projectId,wiName,workItemTitle,workItemDescriptionText,acceptanceText, data.areaPath);
         data.hasWorkItemCreated = true;
         data.workItemNumber = newWI.id.toString();
         data.workItemURL = newWI._links.html.href;        
         data.pageRef.ResetRowState(rowIndex,data);
     }
-    catch(ex)
-    {
+    catch(ex) {
         data.hasWorkItemCreated = true;
         data.workItemNumber = "failed";
         data.workItemURL = "failed";
         console.log(ex.message);
-    }
-    //alert("New User Story Created");
-    
+    }    
 }
 
 export function GetWorkItemDescriptionText(documentPath:string, documentURL:string, lastUpdatedBy:string, lastUdpatedOn:string, documentOwner:string):string

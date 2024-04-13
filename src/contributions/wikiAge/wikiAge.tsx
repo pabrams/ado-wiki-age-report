@@ -1,41 +1,33 @@
 import * as React from "react";
-
 import * as SDK from "azure-devops-extension-sdk";
 import * as API from "azure-devops-extension-api";
 import { CommonServiceIds, IProjectPageService,IGlobalMessagesService } from "azure-devops-extension-api";
-
 import { GitRestClient, GitItem } from "azure-devops-extension-api/Git";
 import { WorkRestClient,BacklogConfiguration, TeamFieldValues } from "azure-devops-extension-api/Work";
 import { CoreRestClient, WebApiTeam } from "azure-devops-extension-api/Core";
 import { WorkItemTypeReference } from "azure-devops-extension-api/WorkItemTracking/WorkItemTracking";
 import { WorkItemTrackingRestClient } from "azure-devops-extension-api/WorkItemTracking";
 import { ArrayItemProvider } from "azure-devops-ui/Utilities/Provider";
-
 import { Page } from "azure-devops-ui/Page";
 import { Table } from "azure-devops-ui/Table";
 import { Header, TitleSize } from "azure-devops-ui/Header";
 import { Spinner, SpinnerSize } from "azure-devops-ui/Spinner";
 import { Card } from "azure-devops-ui/Card";
-
 import {Dropdown} from "azure-devops-ui/Dropdown";
 import { DropdownSelection } from "azure-devops-ui/Utilities/DropdownSelection";
 import { IListBoxItem} from "azure-devops-ui/ListBox";
 import { ZeroData } from "azure-devops-ui/ZeroData";
-
 import { TextField } from "azure-devops-ui/TextField";
-
 import {WikiRestClient, WikiV2} from "azure-devops-extension-api/Wiki";
 import * as GetWiki from "./GetWiki"
 import { showRootComponent } from "../../common";
 import {WikiPageBatchClient, WikiPagesBatchResult,WikiPageVJSP} from './restClient/JeffsWikiClient';
-
 import * as GetGit from "./GitOps";
 import * as TimeCalc from "./Time";
 import * as GetProject from "./GetProjectInfo";
 import { ObservableValue } from "azure-devops-ui/Core/Observable";
 import {PageTableItem, getStatusIndicatorData, CreateWorkItemButtonClick} from "./tableDataItems"
 import { Status, StatusSize } from "azure-devops-ui/Status";
-
 import {        
     ITableColumn,
     SimpleTableCell
@@ -233,7 +225,7 @@ export class WikiAgeContent extends React.Component<{}, IWikiAgeState> {
                 this.setState(newState);
                 await this.DoWork();                
             }
-            catch(ex: any) {
+            catch(ex) {
                 if (ex.message){
                     this.toastError(ex.message);
                     console.log(ex.message);
