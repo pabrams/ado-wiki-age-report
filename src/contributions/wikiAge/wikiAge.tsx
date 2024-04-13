@@ -217,7 +217,7 @@ export class WikiAgeContent extends React.Component<{}, IWikiAgeState> {
                 let coreC:CoreRestClient = await this.GetCoreAPIClient();
                 let workC:WorkRestClient = await this.GetWorkAPIClient();
                 let teamList:WebApiTeam[] = await GetProject.getTeamsList(coreC,project);
-                if(teamList.length > 0) {
+                if (teamList.length > 0) {
                     let backlogConfig:BacklogConfiguration = await GetProject.GetTeamBacklogConfig(workC,teamList[0].id,project);
                     let workItemType:WorkItemTypeReference|undefined = this.GetRequirementWorkItemTypeForTeam(backlogConfig);
                     newState.workItemType = workItemType;                    
@@ -234,7 +234,7 @@ export class WikiAgeContent extends React.Component<{}, IWikiAgeState> {
                 await this.DoWork();                
             }
             catch(ex: any) {
-                if(ex.message){
+                if (ex.message){
                     this.toastError(ex.message);
                     console.log(ex.message);
                 }
