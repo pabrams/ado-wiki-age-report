@@ -27,8 +27,8 @@
     "publish-extension": "tfx extension publish --manifest-globs azure-devops-extension.json src/contributions/wikiAge/wikiAge.json --no-wait-validation"
   },
   "dependencies": {
-    "azure-devops-extension-api": "~1.158.0",
-    "azure-devops-extension-sdk": "~2.0.11",
+    "azure-devops-extension-api": "^4.235.0",
+    "azure-devops-extension-sdk": "^4.0.2",
     "azure-devops-ui": "2.167.22",
     "react": "~16.8.1",
     "react-dom": "~16.8.1"
