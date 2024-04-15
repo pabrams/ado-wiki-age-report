@@ -2,7 +2,7 @@
     "manifestVersion": 1,
     "id": "wikiAge",
     "publisher": "paulabrams1",
-    "version": "1.0.34",
+    "version": "1.0.35",
     "name": "Wiki Age Report",
     "description": "Get insight in to potentially stale and out of date documentation",
     "public": true,
