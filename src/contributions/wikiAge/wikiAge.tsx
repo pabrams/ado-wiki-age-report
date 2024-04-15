@@ -559,7 +559,7 @@ export class WikiAgeContent extends React.Component<{}, IWikiAgeState> {
         let pageTableRows:PageTableItem[] = this.state.pageTableRows;
         console.log ("Filtering pagePath by filterText : " + filterText);
         let filteredRows:PageTableItem[] = pageTableRows.filter( function (item) {
-            return item.pagePath.includes(filterText);
+            return item.pagePath.toLowerCase().includes(filterText.toLowerCase());
         });
         this.setState({pageTableRows:pageTableRows, pagePathFilter:filterText, filteredPageTableRows:filteredRows});
     }
