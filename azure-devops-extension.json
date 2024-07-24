@@ -2,9 +2,9 @@
     "manifestVersion": 1,
     "id": "wikiAge",
     "publisher": "paulabrams1",
-    "version": "1.0.36",
+    "version": "1.0.48",
     "name": "Wiki Age Report",
-    "description": "Get insight in to potentially stale and out of date documentation",
+    "description": "Get insight into potentially stale and out of date documentation",
     "public": true,
     "categories": [
         "Azure Repos"
@@ -49,9 +49,9 @@
     ],
     "contributions": [
         {
-            "id": "onelucki-wiki-age",
+            "id": "wiki-age",
             "type": "ms.vss-web.hub",
-            "description": "Hub to show Work Item time in different states.",
+            "description": "Report on age of wiki pages.",
             "targets": [
                 "ms.vss-web.home-hub-group"
             ],

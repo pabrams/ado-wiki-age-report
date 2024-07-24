@@ -13,7 +13,6 @@ import { Table } from "azure-devops-ui/Table";
 import { Header, TitleSize } from "azure-devops-ui/Header";
 import { Spinner, SpinnerSize } from "azure-devops-ui/Spinner";
 import { Card } from "azure-devops-ui/Card";
-import {Dropdown} from "azure-devops-ui/Dropdown";
 import { DropdownSelection } from "azure-devops-ui/Utilities/DropdownSelection";
 import { IListBoxItem} from "azure-devops-ui/ListBox";
 import { ZeroData } from "azure-devops-ui/ZeroData";
@@ -26,14 +25,12 @@ import * as GetGit from "./GitOps";
 import * as TimeCalc from "./Time";
 import * as GetProject from "./GetProjectInfo";
 import { ObservableValue } from "azure-devops-ui/Core/Observable";
-import {PageTableItem, getStatusIndicatorData, CreateWorkItemButtonClick} from "./tableDataItems"
-import { Status, StatusSize } from "azure-devops-ui/Status";
+import {PageTableItem} from "./tableDataItems"
 import {        
     ITableColumn,
     SimpleTableCell
 } from "azure-devops-ui/Table";
 import { Link } from "azure-devops-ui/Link";
-import { Button } from "azure-devops-ui/Button";
 
 interface IWikiAgeState {
     projectID:string;
@@ -56,30 +53,26 @@ interface IWikiAgeState {
 }
 
 export class WikiAgeContent extends React.Component<{}, IWikiAgeState> {
-    private dateSelectionChoices = [                
-        { text: "Updated in 30 Days", id: "30" },        
-        { text: "Updated in 60 Days", id: "60" },        
-        { text: "Updated in 90 Days", id: "90" },        
-        { text: "Updated in 120 Days", id: "120" },
-        { text: "Updated in 180 Days", id: "180" },        
-        { text: "Updated in last 1 Year", id: "365" },        
-        { text: "Updated in last 2 Years", id: "730" }
-    ];
+    _dataManager:any;
+
+    private async getSavedFilter(): Promise<string> {
+        const accessToken = await SDK.getAccessToken();
+        const extDataService = await SDK.getService<API.IExtensionDataService>(CommonServiceIds.ExtensionDataService);
+        this._dataManager = await extDataService.getExtensionDataManager(SDK.getExtensionContext().id, accessToken);
+        return this._dataManager.getValue("pagePathFilter", {scopeType: "User"}).then(function(value: any) {
+            console.log("User scoped key value is " + value);
+            return value;
+        }); 
+    }
+
+    private async setSavedFilter(value: string): Promise<string> {
+        return this._dataManager.setValue("pagePathFilter", value, {scopeType: "User"}).then(function(setValue: any) {
+            console.log("Saved user-scoped value: " + setValue);
+            return value;
+        });
+    }
     public PageRef:WikiAgeContent;
     private wikiPageColumns:ITableColumn<PageTableItem>[]  = [
-        {
-            id: "statusCol",        
-            readonly: true,
-            renderCell: this.renderStatus,
-            width: new ObservableValue(-9),
-        },
-        {        
-            id: "workItemType",
-            name: "Work Item",
-            readonly: true,
-            renderCell: this.RenderWorkItemButton,
-            width: new ObservableValue(-30)
-        },
         {
             id: "pagePath",
             name: "Page Path",
@@ -110,20 +103,7 @@ export class WikiAgeContent extends React.Component<{}, IWikiAgeState> {
         },
     ]
     
-    private wikiPageColumnsWitOwner : ITableColumn<PageTableItem>[] = [        
-        {
-            id: "statusCol",        
-            readonly: true,
-            renderCell: this.renderStatus,
-            width: new ObservableValue(-9),
-        },
-        {        
-            id: "workItemType",
-            name: "Work Item",
-            readonly: true,
-            renderCell: this.RenderWorkItemButton,
-            width: new ObservableValue(-30)
-        },
+    private wikiPageColumnsWitOwner : ITableColumn<PageTableItem>[] = [
         {
             id: "pagePath",
             name: "Page Path",
@@ -222,6 +202,7 @@ export class WikiAgeContent extends React.Component<{}, IWikiAgeState> {
                 newState.defaultTeamSelection = teamDefault;
                 let teamSetting:TeamFieldValues = await GetProject.GetTeamFieldValues(workC,project.id,newState.teamListItems[teamIndexDefault].id);
                 newState.selectedAreaPath = teamSetting.defaultValue;
+                newState.pagePathFilter = await this.getSavedFilter();
                 this.setState(newState);
                 await this.DoWork();                
             }
@@ -293,6 +274,7 @@ export class WikiAgeContent extends React.Component<{}, IWikiAgeState> {
                 s.filteredPageTableRows = tblRow;
                 s.doneLoading=true;
                 this.setState(s);
+                this.applyPagePathFilter(s.pagePathFilter);
             }
         }
         catch(ex) {
@@ -452,7 +434,6 @@ export class WikiAgeContent extends React.Component<{}, IWikiAgeState> {
             duration: 3000,
             message: toastText        
         });
-        //this.setState({isToastVisible:true, isToastFadingOut:false, exception:toastText})
     }
 
     private async GetGitAPIClient():Promise<GitRestClient> {
@@ -533,50 +514,21 @@ export class WikiAgeContent extends React.Component<{}, IWikiAgeState> {
         });
     }
 
-    private  selectTeam = (event: React.SyntheticEvent<HTMLElement>, item: IListBoxItem<{}>) =>{
-        this.DoTeamSelect(item.id);
-    }
-
-    private async DoTeamSelect(teamId:string) {
-        let projectId:string = this.state.projectID;
-        let workClient:WorkRestClient = await this.GetWorkAPIClient();
-        let teamSetting:TeamFieldValues = await GetProject.GetTeamFieldValues(workClient,projectId,teamId);
-        let path = teamSetting.defaultValue;
-        let pageTableRows:PageTableItem[] =this.state.pageTableRows;
-        let ndx:number =0;
-        do{
-            pageTableRows[ndx].areaPath = path;
-            ndx++;
-        } while(ndx < pageTableRows.length)
-        this.setState({pageTableRows:pageTableRows, selectedAreaPath:path});
-    }
-
     private filterTextChanged = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, value: string) => {
         this.applyPagePathFilter(value);
     }
 
-    private async applyPagePathFilter(filterText:string) {
+    private async applyPagePathFilter (filterText:string) {
         let pageTableRows:PageTableItem[] = this.state.pageTableRows;
         console.log ("Filtering pagePath by filterText : " + filterText);
         let filteredRows:PageTableItem[] = pageTableRows.filter( function (item) {
             return item.pagePath.toLowerCase().includes(filterText.toLowerCase());
         });
+        this.setSavedFilter(filterText);
         this.setState({pageTableRows:pageTableRows, pagePathFilter:filterText, filteredPageTableRows:filteredRows});
     }
 
-    private SelectDays = (event: React.SyntheticEvent<HTMLElement>, item: IListBoxItem<{}>) => {
-        let d:number = Number.parseInt(item.id);
-        this.DoDateSelect(d);
-    };
-
-    private DoDateSelect(daysNumber:number) {
-        let currentState:IWikiAgeState = this.state;
-        currentState.daysThreshold = daysNumber;
-        this.SetTableRowsDaysThreshold(currentState.pageTableRows, daysNumber);
-        this.setState(currentState);
-    }
-
-    private CollectPageRows(pageList:WikiPagesBatchResult[], projectId:string, areaPath:string):PageTableItem[] {
+    private CollectPageRows (pageList:WikiPagesBatchResult[], projectId:string, areaPath:string):PageTableItem[] {
         let result:PageTableItem[] = [];
         pageList.forEach(thisPage => {
             let newPage:PageTableItem = {
@@ -605,7 +557,7 @@ export class WikiAgeContent extends React.Component<{}, IWikiAgeState> {
         return result;
     }
 
-    private RenderIDLink(
+    private RenderIDLink (
         rowIndex: number,
         columnIndex: number,
         tableColumn: ITableColumn<PageTableItem>,
@@ -625,29 +577,7 @@ export class WikiAgeContent extends React.Component<{}, IWikiAgeState> {
         );
     }
 
-    private renderStatus(
-        rowIndex: number,
-        columnIndex: number,
-        tableColumn: ITableColumn<PageTableItem>,
-        tableItem: PageTableItem
-    ): JSX.Element {
-        const { daysOld, daysThreshold} = tableItem;
-        return (
-            <SimpleTableCell 
-            columnIndex={columnIndex} 
-            tableColumn={tableColumn} 
-            key={"col-" + columnIndex} 
-            contentClassName="fontWeightSemiBold font-weight-semibold fontSizeM font-size-m scroll-hidden">
-            <Status
-                {...getStatusIndicatorData(daysOld, daysThreshold).statusProps}
-                className="icon-large-margin"
-                size={StatusSize.m}
-            />
-            </SimpleTableCell>
-        );
-    }
-
-    private RenderDaysCount(
+    private RenderDaysCount (
         rowIndex: number,
         columnIndex: number,
         tableColumn: ITableColumn<PageTableItem>,
@@ -665,7 +595,7 @@ export class WikiAgeContent extends React.Component<{}, IWikiAgeState> {
         );
     }
 
-    private RenderTimestamp(
+    private RenderTimestamp (
         rowIndex: number,
         columnIndex: number,
         tableColumn: ITableColumn<PageTableItem>,
@@ -683,7 +613,7 @@ export class WikiAgeContent extends React.Component<{}, IWikiAgeState> {
         );
     }
 
-    private RenderName(
+    private RenderName (
         rowIndex: number,
         columnIndex: number,
         tableColumn: ITableColumn<PageTableItem>,
@@ -715,92 +645,6 @@ export class WikiAgeContent extends React.Component<{}, IWikiAgeState> {
         );
     }
 
-    private RenderWorkItemButton(
-        rowIndex: number,
-        columnIndex: number,
-        tableColumn: ITableColumn<PageTableItem>,
-        tableItem: PageTableItem        
-    ): JSX.Element {
-        const {pagePath, daysOld, daysThreshold, pageOwner, updatedBy, workItemType,hasWorkItemCreated, index} = tableItem;
-        if (workItemType) {
-            let workItemTypetext:string =  workItemType.name;
-            if(workItemTypetext.toUpperCase() == "PRODUCT BACKLOG ITEM"){
-                workItemTypetext = "PBI";
-            }
-            let btnText:string = "Create " + workItemTypetext;
-            if (daysOld >= daysThreshold) {
-                if (!hasWorkItemCreated) {
-                    return (
-                        <SimpleTableCell 
-                        columnIndex={columnIndex} 
-                        tableColumn={tableColumn} 
-                        key={"col-" + columnIndex} 
-                        contentClassName="fontWeightSemiBold font-weight-semibold fontSizeM font-size-m scroll-hidden">
-                            <Button 
-                            text={btnText} 
-                            id={rowIndex.toString()} 
-                            subtle={false} 
-                            primary={true} 
-                            onClick={() => {CreateWorkItemButtonClick(tableItem, rowIndex)} }>
-                            </Button>
-                        </SimpleTableCell>
-                    );
-                }
-                else {
-                    if(tableItem.workItemNumber == "" || tableItem.workItemURL == "") {
-                        return (                        
-                            <SimpleTableCell 
-                            columnIndex={columnIndex} 
-                            tableColumn={tableColumn} 
-                            key={"col-" + columnIndex} 
-                            contentClassName="fontWeightSemiBold font-weight-semibold fontSizeM font-size-m scroll-hidden">
-                                <Spinner label="Loading ..." size={SpinnerSize.xSmall} />
-                            </SimpleTableCell>
-                        );
-                    }
-                    else {
-                        return (
-                        <SimpleTableCell 
-                        columnIndex={columnIndex} 
-                        tableColumn={tableColumn} 
-                        key={"col-" + columnIndex} 
-                        contentClassName="fontWeightSemiBold font-weight-semibold fontSizeM font-size-m scroll-hidden">
-                            <Link 
-                            subtle={false} 
-                            className="linkText"  
-                            excludeTabStop href={tableItem.workItemURL} 
-                            target="_blank" 
-                            tooltipProps={{ text: tableItem.workItemURL }}>
-                                {workItemTypetext}: {tableItem.workItemNumber}
-                            </Link>
-                        </SimpleTableCell>
-                        );
-                    }
-                }
-            }
-            else {
-                return (
-                    <SimpleTableCell 
-                    columnIndex={columnIndex} 
-                    tableColumn={tableColumn} 
-                    key={"col-" + columnIndex} 
-                    contentClassName="fontWeightSemiBold font-weight-semibold fontSizeM font-size-m scroll-hidden">
-                    </SimpleTableCell>
-                );
-            }
-        }
-        else {
-            return (
-                <SimpleTableCell 
-                columnIndex={columnIndex} 
-                tableColumn={tableColumn} 
-                key={"col-" + columnIndex} 
-                contentClassName="fontWeightSemiBold font-weight-semibold fontSizeM font-size-m scroll-hidden">
-                </SimpleTableCell>
-            );
-        }
-    }
-
     public dateSort(a:PageTableItem, b:PageTableItem) {
         if(a.updateDateMili < b.updateDateMili) {return -1;}
         if(a.updateDateMili > b.updateDateMili) {return 1;}
@@ -811,14 +655,6 @@ export class WikiAgeContent extends React.Component<{}, IWikiAgeState> {
         let d = this.state.pageTableRows;
         d[rowIndex] = data;
         this.setState({pageTableRows:d});
-    }
-
-    private GetShowTeamBoxStyles(teamList:Array<IListBoxItem<{}>>):string {
-        let suffix:string = "";
-        if (teamList.length <= 1) {
-            suffix = "-hidden";
-        }
-        return suffix;
     }
 
     private GetDefaultTeamIndex(teamList:Array<IListBoxItem<{}>>, projectName:string):number {
@@ -841,18 +677,13 @@ export class WikiAgeContent extends React.Component<{}, IWikiAgeState> {
         let renderOwners = this.state.renderOwners;
         let failedFindingWikiPages:boolean = this.state.emptyWiki;
         let tableColumns = [];
-        let defaultDateSelection = this.state.defaultDateSelection;
         let teamList:Array<IListBoxItem<{}>> = this.state.teamListItems;
         let tableItemsNoIcons = new ArrayItemProvider<PageTableItem> (
             this.state.filteredPageTableRows.map((item: PageTableItem) => {
                 const newItem = Object.assign({}, item);
                 return newItem;
             })
-        );        
-        let teamDefault:DropdownSelection = this.state.defaultTeamSelection;
-        let classSuffix:string = this.GetShowTeamBoxStyles(teamList);
-        let teamSelectPromptClass:string ="teamSelectPrompt" + classSuffix;
-        let teamDropDownClass:string ="teamDropDown" + classSuffix;
+        );
         let filterValue:string = this.state.pagePathFilter;
         if(doneLoading) {
             if(failedFindingWikiPages) {
@@ -887,60 +718,19 @@ export class WikiAgeContent extends React.Component<{}, IWikiAgeState> {
                             <table style={{ textAlign:"left", minWidth:"650px", minHeight:""}}>
                                 <tr>
                                     <td style={{ minWidth:"200px"}}>
-                                    <Header title="Wiki Age Report" titleSize={TitleSize.Large} />
+                                        <Header title="Wiki Age Report" titleSize={TitleSize.Large} />
                                     </td>
+                                </tr>
+                                <tr>
                                     <td>
-                                        <table>
-                                            <tr>
-                                                <td >
-                                                    <Header 
-                                                    title="Age To Be Considered Old: " 
-                                                    className="selectPrompt" 
-                                                    titleSize={TitleSize.Small} />
-                                                </td>
-                                                <td>
-                                                    <Dropdown 
-                                                    items={this.dateSelectionChoices} 
-                                                    placeholder="Select How old is old" 
-                                                    ariaLabel="Basic" 
-                                                    className="daysDropDown" 
-                                                    onSelect={this.SelectDays} 
-                                                    selection={defaultDateSelection} /> 
-                                                </td>
-                                                <td>
-                                                    &nbsp;
-                                                </td>
-                                                <td>
-                                                    <Header 
-                                                    title="Team To Add Work Items To: " 
-                                                    className={teamSelectPromptClass} 
-                                                    titleSize={TitleSize.Small} />
-                                                </td>
-                                                <td>
-                                                    <Dropdown 
-                                                    items={teamList} 
-                                                    placeholder="Select a Team" 
-                                                    ariaLabel="Basic" 
-                                                    className={teamDropDownClass} 
-                                                    onSelect={this.selectTeam} 
-                                                    selection={teamDefault} /> 
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td>
-                                                    <TextField 
-                                                    placeholder="enter a filter for Page Path"
-                                                    autoFocus 
-                                                    autoSelect 
-                                                    value={filterValue} 
-                                                    onChange={this.filterTextChanged} /> 
-                                                </td>
-                                            </tr>
-                                        </table>
-                                        
-                                    </td>
-                                    <td>
-
+                                        Filter: 
+                                        <TextField 
+                                            placeholder="enter a filter for Page Path"
+                                            autoFocus 
+                                            autoSelect 
+                                            value={filterValue} 
+                                            onChange={this.filterTextChanged} 
+                                        />
                                     </td>
                                 </tr>
                             </table>

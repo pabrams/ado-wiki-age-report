@@ -1,11 +1,10 @@
 {
     "manifestVersion": 1,
     "id": "wikiAgeTest",
-    "publisher": "OneLuckiDev",
+    "publisher": "paulabrams1",
     "version": "1.0.92",
-
     "name": "Wiki Age Report Test",
-    "description": "Get insight in to potentially stale and out of date documentation",
+    "description": "Get insight into potentially stale and out of date documentation",
     "public": false,
     "categories": [
         "Azure Repos"
@@ -50,7 +49,7 @@
     ],
     "contributions": [
         {
-            "id": "onelucki-wiki-age",
+            "id": "wiki-age",
             "type": "ms.vss-web.hub",
             "description": "Hub to show Work Item time in different states.",
             "targets": [

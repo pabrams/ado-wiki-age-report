@@ -5,9 +5,7 @@ import {
     ITableColumn,
     SimpleTableCell
 } from "azure-devops-ui/Table";
-import { Link } from "azure-devops-ui/Link";
 import { WikiAgeContent } from './wikiAge';
-import * as WI from './WorkItemFunctions';
 
 export interface PageTableItem {
     projectId:string;
@@ -31,43 +29,6 @@ export interface PageTableItem {
     workItemURL:string;
 }
 
-
-
-export function RenderIDLink (
-rowIndex: number,
-columnIndex: number,
-tableColumn: ITableColumn<PageTableItem>,
-tableItem: PageTableItem
-): JSX.Element
-{
-const { pagePath,  pageURL} = tableItem;
-return (
-
-    <SimpleTableCell columnIndex={columnIndex} tableColumn={tableColumn} key={"col-" + columnIndex} contentClassName="fontWeightSemiBold font-weight-semibold fontSizeM font-size-m scroll-hidden">
-        <Link subtle={false} className="linkText"  excludeTabStop href={pageURL} target="_blank" tooltipProps={{ text: pagePath }}>
-            {pagePath}
-        </Link>
-    </SimpleTableCell>
-);
-}
-export function renderStatus(
-    rowIndex: number,
-    columnIndex: number,
-    tableColumn: ITableColumn<PageTableItem>,
-    tableItem: PageTableItem
-    ): JSX.Element
-    {
-    const { daysOld, daysThreshold} = tableItem;
-    return (
-        <SimpleTableCell columnIndex={columnIndex} tableColumn={tableColumn} key={"col-" + columnIndex} contentClassName="fontWeightSemiBold font-weight-semibold fontSizeM font-size-m scroll-hidden">
-        <Status
-            {...getStatusIndicatorData(daysOld, daysThreshold).statusProps}
-            className="icon-large-margin"
-            size={StatusSize.m}
-        />
-        </SimpleTableCell>
-    );
-}
 
 export function RenderDaysCount(
     rowIndex: number,
@@ -160,36 +121,6 @@ export function getStatusIndicatorData(daysOld: number, threshhold:number): ISta
         indicatorData.label = "Warning";
     }
     return indicatorData;
-}
-    
-export async function CreateWorkItemButtonClick(data:PageTableItem, rowIndex:number):Promise<any> {
-    data.hasWorkItemCreated= true;
-    data.pageRef.ResetRowState(rowIndex,data);
-    let WITCl = await data.pageRef.GetWorkWITClient();
-    let wiName:string =  "";
-    if(data.workItemType) {
-        wiName = data.workItemType.name;        
-    }
-    else {
-        wiName = "Task";
-    }
-
-    let workItemDescriptionText:string = GetWorkItemDescriptionText(data.pagePath, data.pageURL, data.updatedBy, data.updateTimestamp, data.pageOwner);
-    let workItemTitle:string = `Update Wiki Document ${data.fileName}`;
-    let acceptanceText:string = `<div>The Wiki document has been reviewed and updated to be current as of Today.</div> <div><br></div><div>Update the document with an Updated date or a Reviewed Date remark to make sure it comes off the Wiki Age Report`;
-    try {
-        let newWI:WorkItem = await WI.CreateWorkItem(WITCl,data.projectId,wiName,workItemTitle,workItemDescriptionText,acceptanceText, data.areaPath);
-        data.hasWorkItemCreated = true;
-        data.workItemNumber = newWI.id.toString();
-        data.workItemURL = newWI._links.html.href;        
-        data.pageRef.ResetRowState(rowIndex,data);
-    }
-    catch(ex) {
-        data.hasWorkItemCreated = true;
-        data.workItemNumber = "failed";
-        data.workItemURL = "failed";
-        console.log(ex.message);
-    }    
 }
 
 export function GetWorkItemDescriptionText(documentPath:string, documentURL:string, lastUpdatedBy:string, lastUdpatedOn:string, documentOwner:string):string
