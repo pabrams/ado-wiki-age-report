@@ -723,7 +723,7 @@ export class WikiAgeContent extends React.Component<{}, IWikiAgeState> {
                                 </tr>
                                 <tr>
                                     <td>
-                                        Filter: 
+                                        Filter (page path column):
                                         <TextField 
                                             placeholder="enter a filter for Page Path"
                                             autoFocus 
